@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Shopping Agent",
+  "version": "1.0",
+  "description": "Smart, modern overlay that compares Amazon products using Gemini AI.",
+  "action": {
+    "default_title": "Compare Amazon Tabs"
+  },
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.amazon.com/*",
+    "*://*.amazon.in/*",
+    "*://*.amazon.co.uk/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

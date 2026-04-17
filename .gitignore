@@ -1,0 +1,17 @@
+# macOS specific
+.DS_Store
+
+# Node/NPM (future-proofing in case you ever use build tools like Vite/Webpack)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment Variables (future-proofing in case you ever decide to use a proxy server)
+.env
+.env.*
+
+# Extension build outputs (for when you package it for the Chrome Web Store!)
+*.pem
+*.crx
+*.zip
+releases/
