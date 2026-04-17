@@ -16,6 +16,17 @@
     "*://*.amazon.com/*",
     "*://*.amazon.in/*",
     "*://*.amazon.co.uk/*",
+    "*://*.amazon.ca/*",
+    "*://*.amazon.de/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.es/*",
+    "*://*.amazon.it/*",
+    "*://*.amazon.com.au/*",
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.ae/*",
+    "*://*.amazon.sa/*",
+    "*://*.amazon.com.br/*",
+    "*://*.amazon.com.mx/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "web_accessible_resources": [

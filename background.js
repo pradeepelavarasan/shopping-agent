@@ -4,7 +4,16 @@ async function getApiKey() {
     return result.geminiApiKey;
 }
   
-async function runComparison(tab, apiKey) {
+async function runComparison(tab, apiKey, priorities, forceRefresh = false) {
+    const defaultPriorities = [
+        "Customer Sentiment",
+        "Reliability",
+        "Value for Money",
+        "Feature Completeness",
+        "Build Quality"
+    ];
+    const activePriorities = priorities || defaultPriorities;
+
     const sendUpdate = (htmlContent) => {
         chrome.tabs.sendMessage(tab.id, { action: 'UPDATE_UI', html: htmlContent }, () => {
             if (chrome.runtime.lastError) { let ignore = chrome.runtime.lastError; }
@@ -12,16 +21,18 @@ async function runComparison(tab, apiKey) {
     };
 
     try {
-        sendUpdate('<div class="loading">Locating your Amazon product tabs...</div>');
+        sendUpdate(`
+        <div class="loading-block">
+            <div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <div id="loading-cycler">Locating active Amazon tabs...</div>
+        </div>`);
 
-        // Find all Amazon tabs in the current window using explicit valid match patterns
         const tabs = await chrome.tabs.query({ 
             url: [
-                "*://*.amazon.com/*", 
-                "*://*.amazon.in/*", 
-                "*://*.amazon.co.uk/*", 
-                "*://*.amazon.ca/*",
-                "*://*.amazon.com.au/*"
+                "*://*.amazon.com/*", "*://*.amazon.in/*", "*://*.amazon.co.uk/*", "*://*.amazon.ca/*",
+                "*://*.amazon.de/*", "*://*.amazon.fr/*", "*://*.amazon.es/*", "*://*.amazon.it/*",
+                "*://*.amazon.com.au/*", "*://*.amazon.co.jp/*", "*://*.amazon.ae/*", "*://*.amazon.sa/*",
+                "*://*.amazon.com.br/*", "*://*.amazon.com.mx/*"
             ], 
             currentWindow: true 
         });
@@ -33,7 +44,25 @@ async function runComparison(tab, apiKey) {
             return;
         }
 
-        sendUpdate('<div class="loading">Extracting data from ' + productTabs.length + ' products...</div>');
+        // --- CACHING SYSTEM LOGIC ---
+        // Create a definitive hash string capturing the exact URLs and priority order!
+        const currentHash = productTabs.map(t => t.url).sort().join('||') + '###' + activePriorities.join('|');
+        const storageData = await chrome.storage.local.get(['cachedTabsHash', 'cachedMatrixHtml']);
+        
+        if (!forceRefresh && storageData.cachedTabsHash === currentHash && storageData.cachedMatrixHtml) {
+            console.log("CACHE HIT! Displaying saved matrix to save API calls.");
+            // Artificial delay so the loading spinner runs momentarily, improving UX
+            await new Promise(r => setTimeout(r, 400));
+            sendUpdate(storageData.cachedMatrixHtml);
+            return;
+        }
+
+
+        sendUpdate(`
+        <div class="loading-block">
+            <div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <div id="loading-cycler">Extracting data from ${productTabs.length} products...</div>
+        </div>`);
 
         const productDataList = [];
         for (const aTab of productTabs) {
@@ -59,9 +88,49 @@ async function runComparison(tab, apiKey) {
             return;
         }
 
-        sendUpdate('<div class="loading">Reading actual customer reviews...<br/><br/>Comparing ' + productDataList.length + ' products...</div>');
+        sendUpdate(`
+        <div class="loading-block">
+            <div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <div id="loading-cycler">Analyzing Criteria...</div>
+            <div style="color:#94a3b8; font-size:13px; text-align: center; margin-top: 4px; opacity: 0.7;">Running deeper matrices via custom priorities</div>
+        </div>`);
 
-        const prompt = `You are an expert AI Shopping Agent. I am providing you with details of several products currently open in a user's browser, including their review summaries. Evaluate each product specifically focusing on:\n1. 'Brand Recognition & Trust'\n2. 'Quality of materials / Longevity'\n3. 'Customer Sentiment Summary' (Synthesize the newly provided review data into a sharp, 1-2 sentence summary of what real users actually say).\n\nCrucially, based on an overall assessment of value, brand, quality, and giving appropriate weight to the customer reviews (High Confidence aggregates should be weighed heavily, Low Confidence raw reviews weighed lightly), you MUST select EXACTLY ONE product as the absolute top recommendation for the user.\n\nRespond ONLY with a valid JSON array matching this exact schema for each product (no markdown formatting, no comments):\n[\n  {\n    "tabId": <number>,\n    "brand_recognition_summary": "<short string>",\n    "quality_longevity_summary": "<short string>",\n    "customer_sentiment_summary": "<short string>",\n    "is_top_recommendation": <boolean>,\n    "recommendation_reason": "<If is_top_recommendation is true, formulate a subjective summary starting with 'Based on your preference for...' and give the recommendation reason. Otherwise leave empty.>"\n  }\n]\n\nProducts Data:\n` + JSON.stringify(productDataList.map(p => ({ tabId: p.tabId, title: p.title, description: p.description, price: p.price, rating: p.rating, reviewsCount: p.reviews, reviewsSourceLevel: p.reviewsSource, reviewsTextData: p.topReviews })));
+        const highPri = activePriorities.slice(0, 2).join(", ");
+        const medPri = activePriorities[2] || "None specifically";
+        const lowPri = activePriorities.slice(3).join(", ");
+
+        const prompt = `You are an expert AI Shopping Agent. I am providing you with multiple products extracted from a user's browser.
+You must construct a deeply analytical grid comparing these items.
+
+Critique each product across ALL the specific criteria the user provided. You must dynamically generate a 1-2 sentence evaluation for EACH of the exact distinct criteria strings provided.
+
+When choosing the Top Recommendation, you MUST strictly adhere to this custom user Priority Weighting:
+[HIGH WEIGHT - Dealmakers]: ${highPri}
+[MEDIUM WEIGHT - Tiebreakers]: ${medPri}
+[LOW WEIGHT - Minor factors]: ${lowPri}
+
+Crucially, you MUST speak directly to the user as their personal executive assistant. Provide a single "overall_agent_summary" at the root level explaining EXACTLY why you chose the top recommendation compared to the rest of the field.
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "overall_agent_summary": "<1-2 natural language sentences explaining to the user exactly why you are recommending the Top Recommendation compared to the rest of the options.>",
+  "products": [
+    {
+      "tabId": <number>,
+      "is_top_recommendation": <boolean>,
+      "evaluations": {
+         "${activePriorities[0] || 'Criterion 1'}": "<1-2 sentence sharp critique>",
+         "${activePriorities[1] || 'Criterion 2'}": "<1-2 sentence sharp critique>",
+         "${activePriorities[2] || 'Criterion 3'}": "<1-2 sentence sharp critique>",
+         "${activePriorities[3] || 'Criterion 4'}": "<1-2 sentence sharp critique>",
+         "${activePriorities[4] || 'Criterion 5'}": "<1-2 sentence sharp critique>"
+      }
+    }
+  ]
+}
+
+Products Data:
+` + JSON.stringify(productDataList.map(p => ({ tabId: p.tabId, title: p.title, description: p.description, price: p.price, rating: p.rating, reviewsCount: p.reviews, reviewsSourceLevel: p.reviewsSource, reviewsTextData: p.topReviews })));
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
             method: 'POST',
@@ -79,69 +148,100 @@ async function runComparison(tab, apiKey) {
         const aiData = await response.json();
         let aiText = aiData.candidates[0].content.parts[0].text;
         aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        // Robust JSON Sanitize for Gemini LLM trailing commas
+        aiText = aiText.replace(/,\s*([\]}])/g, '$1');
+
         const parsedAiData = JSON.parse(aiText);
 
-        // Figure out which is top, and sort so top is at index 0
-        const topRecId = parsedAiData.find(x => x.is_top_recommendation)?.tabId;
+        const productsArray = Array.isArray(parsedAiData) ? parsedAiData : (parsedAiData.products || []);
+        const rootSummary = parsedAiData.overall_agent_summary || "I have evaluated the market based on your priorities. Here is how they stack up.";
+
+        const topRecId = productsArray.find(x => x.is_top_recommendation)?.tabId;
         productDataList.sort((a, b) => {
             if (a.tabId === topRecId) return -1;
             if (b.tabId === topRecId) return 1;
             return 0;
         });
 
-        let finalHtml = '<div class="product-cards">';
+        let finalHtml = `
+        <div class="global-agent-summary">
+            <div class="agent-avatar">✨</div>
+            <div class="agent-text">"${rootSummary}"</div>
+        </div>
+        <div class="comparison-grid">`;
         productDataList.forEach(prod => {
-            const aiInsight = parsedAiData.find(x => x.tabId === prod.tabId) || { brand_recognition_summary: "No insight available.", quality_longevity_summary: "No insight available.", customer_sentiment_summary: "No reviews to analyze." };
+            const aiInsight = productsArray.find(x => x.tabId === prod.tabId) || { evaluations: {} };
             const isTop = prod.tabId === topRecId;
 
-            let cardClasses = 'product-card';
-            let topBadgeHtml = '';
-
-            if (isTop) {
-                cardClasses += ' top-recommendation';
-                topBadgeHtml = `
-                    <div class="top-badge">⭐ Top Recommendation</div>
-                    <div class="top-reason">${aiInsight.recommendation_reason || "Based on an overall assessment of value, customer reviews, and brand, this is our top recommendation."}</div>
-                `;
-            }
+            let colClass = isTop ? "grid-col top-rec" : "grid-col";
+            let topBadge = isTop ? '<div class="top-badge-matrix">⭐ Top Recommendation</div>' : "";
+            
+            let evalRows = '';
+            activePriorities.forEach(crit => {
+                 let textData = aiInsight.evaluations[crit] || "Not evaluated based on missing AI data.";
+                 evalRows += `
+                 <div class="eval-row">
+                    <span class="eval-label">${crit}</span>
+                    <span class="eval-text">${textData}</span>
+                 </div>`;
+            });
 
             const reviewsStr = prod.reviews ? ` (${prod.reviews} reviews)` : '';
             const ratingStr = prod.rating ? `⭐ ${prod.rating}${reviewsStr}` : 'No Rating';
 
             finalHtml += `
-            <div class="${cardClasses}">
-                ${topBadgeHtml}
-                <div class="card-body">
-                    <div class="prod-img">
-                        <img src="${prod.image || 'https://via.placeholder.com/120?text=No+Image'}" alt="Product Image" />
-                    </div>
-                    <div class="prod-info">
-                        <div class="prod-title" title="${prod.title.replace(/"/g, '&quot;')}">${prod.title}</div>
-                        <div class="prod-metrics">
-                            <span class="price">${prod.price || 'Price Unavailable'}</span>
-                            <span class="rating">${ratingStr}</span>
-                        </div>
-                        <div class="ai-insight">
-                            <strong>Brand:</strong> ${aiInsight.brand_recognition_summary}
-                        </div>
-                        <div class="ai-insight">
-                            <strong>Longevity:</strong> ${aiInsight.quality_longevity_summary}
-                        </div>
-                        <div class="ai-insight review-summary">
-                            <strong>Review Summary:</strong> ${aiInsight.customer_sentiment_summary}
-                        </div>
-                        <button class="jump-to-tab" data-tab-id="${prod.tabId}">Go to Product</button>
-                    </div>
+            <div class="${colClass}">
+                ${topBadge}
+                <div class="grid-header">
+                     <div class="matrix-img"><img src="${prod.image || 'https://via.placeholder.com/180?text=No+Image'}" /></div>
+                     <div class="matrix-title" title="${prod.title.replace(/"/g, '&quot;')}">${prod.title}</div>
+                     <div class="matrix-metrics">
+                           <span class="price">${prod.price || 'N/A'}</span>
+                           <span class="rating">${ratingStr}</span>
+                     </div>
+                     <button class="jump-to-tab" data-tab-id="${prod.tabId}">Go to Product</button>
+                </div>
+                <div class="grid-body">
+                    ${evalRows}
                 </div>
             </div>`;
         });
         finalHtml += '</div>';
 
+        // Write to Chrome persistence cache
+        await chrome.storage.local.set({ cachedTabsHash: currentHash, cachedMatrixHtml: finalHtml });
+
         sendUpdate(finalHtml);
 
     } catch (err) {
         console.error("System Error in runComparison:", err);
-        sendUpdate(`<div class="error">Something went wrong.<br/>Error: ${err.message}</div>`);
+        
+        let userMessage = "Something went wrong while processing the matrix data.";
+        let rawError = err.message || err.toString();
+
+        if (rawError.toLowerCase().includes("failed to fetch")) {
+            userMessage = "Network Connection Error. Please verify your internet connection or check if the Gemini API is reachable from your network.";
+        } else if (rawError.includes("429") || rawError.includes("quota")) {
+            userMessage = "API Rate Limit Exceeded. The Agent has made too many requests. Please wait a moment and try again.";
+        } else if (rawError.includes("JSON") || rawError.includes("parse") || rawError.includes("double-quoted property")) {
+            userMessage = "The AI Agent generated an invalid or interrupted data structure. Simply hit 'Save Setup' above to force the agent to try again.";
+        } else if (rawError.includes("403") || rawError.includes("400") || rawError.includes("API key not valid")) {
+            userMessage = "API Key Error. Please ensure your Gemini key is correct and has the necessary permissions active.";
+        }
+
+        const errorHtml = `
+        <div class="agent-error-container">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">Agent Analysis Failed</div>
+            <div class="error-user-msg">${userMessage}</div>
+            <div class="error-actions">
+                <button class="err-toggle-btn">Show Error Details</button>
+            </div>
+            <div class="error-raw-trace hidden">${rawError}</div>
+        </div>`;
+        
+        sendUpdate(errorHtml);
     }
 }
 
@@ -152,7 +252,6 @@ chrome.action.onClicked.addListener(async (tab) => {
             files: ['overlay.js']
         });
     } catch (e) {
-        console.error(`Cannot inject overlay into this tab (${tab.url}):`, e);
         chrome.action.setBadgeText({ text: "ERR", tabId: tab.id });
         setTimeout(() => chrome.action.setBadgeText({ text: "", tabId: tab.id }), 3000);
         return;
@@ -179,7 +278,14 @@ chrome.action.onClicked.addListener(async (tab) => {
         return;
     }
 
-    runComparison(tab, apiKey);
+    const defaultPriorities = [
+        "Customer Sentiment",
+        "Reliability",
+        "Value for Money",
+        "Feature Completeness",
+        "Build Quality"
+    ];
+    runComparison(tab, apiKey, defaultPriorities, false);
 });
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
@@ -190,13 +296,22 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             const newKey = request.key.trim();
             await chrome.storage.local.set({ geminiApiKey: newKey });
             
-            // Immediately start the comparison
-            chrome.tabs.sendMessage(sender.tab.id, { action: 'UPDATE_UI', html: '<div class="loading">API Key verified. Starting auto-comparison...</div>' }, () => {
+            chrome.tabs.sendMessage(sender.tab.id, { action: 'UPDATE_UI', html: `
+            <div class="loading-block">
+                <div class="spinner-modern"></div>
+                <div id="loading-cycler">API Key verified. Starting auto-comparison...</div>
+            </div>` }, () => {
                 if (chrome.runtime.lastError) { let ignore = chrome.runtime.lastError; }
             });
             setTimeout(() => {
-                runComparison(sender.tab, newKey);
+                runComparison(sender.tab, newKey, request.priorities, false);
             }, 800);
+        }
+    } else if (request.action === 'RUN_COMPARISON') {
+        const apiKey = await getApiKey();
+        if (apiKey) {
+            // When editing priorities inside the overlay and clicking save, pass forceRefresh=true
+            runComparison(sender.tab, apiKey, request.priorities, request.forceRefresh);
         }
     }
 });
