@@ -59,16 +59,16 @@ The extension runs natively in your browser, so you need your own AI key. It's c
 ---
 
 ## 🔧 "The Hard Parts" — Challenges & Learnings
-Building an extension that bridges local browser DOM scraping and an external LLM gracefully had several tricky components.
+Building an intelligent agent that feels like a natural extension of a user's decision-making process required solving several application-strategy dilemmas.
 
-### 🛡️ Style Isolation (Shadow DOM)
-If we injected CSS directly into Amazon's pages, Amazon's complex stylesheets would instantly break our matrix layout. The solution was mounting the entire UI inside a **Shadow DOM** (`Element.attachShadow`). This created an isolated CSS environment where our sleek, glassmorphism dark-mode UI couldn't be polluted by the host site's native styles.
+### 📍 The Scouting Limit (Search Results vs. Open Tabs)
+One of our core challenges was deciding *where* the agent should scout. While searching for data on the search results page seems logical, these pages are data-poor and technically restricted from "deep-scraping" products that aren't yet open. We chose a **"Tab-First" strategy**: this ensures we only evaluate products the user has actually expressed interest in, while providing the high-fidelity data required for a nuanced AI comparison.
 
-### 🤖 Structured JSON Enforcement
-Prompting an LLM to "compare products" usually results in a massive block of unformatted text. To build a deterministic grid matrix, we enforced a strict nested JSON schema using a zero-shot prompt. The extension parses this JSON programmatically to inject the `sent-positive` (Green) and `sent-negative` (Red) CSS classes natively into the DOM grid.
+### 📊 Compliance vs. Data (The Review Strategy)
+A major application hurdle is the inability to navigate through thousands of historical reviews, which are typically gated behind sub-pages and separate navigation structures. Since "deep-crawling" these off-tab pages is not a compliant way to navigate and is often restricted by anti-bot standards, we smartly pivoted our strategy. We leverage the "Top Reviews" and Amazon's own AI-generated sentiment summaries found directly on the main product page—delivering verified consumer sentiment while staying entirely within a compliant, high-speed browsing session.
 
-### 🌐 Cross-Tab Scraping
-Browser security restricts one tab from reading another. To scrape all the products, the central `background.js` Service Worker had to query `chrome.tabs`, inject the `extractor.js` payload into *every* open shopping tab asynchronously, and safely package the results into a single payload for the AI API.
+### 🧠 The Missing Link (Personalization & Order History)
+A true personalized agent would ideally auto-populate your preferences by analyzing your order history. Since reading past behavior is a significant privacy and technical hurdle, we chose to make the "Decision Logic" manual and transparent for now. Users can manually tweak priorities and criteria—building a bridge to future versions where we hope to remove this manual setup entirely by natively understanding your past shopping aspects.
 
 ---
 
