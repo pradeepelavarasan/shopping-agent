@@ -4,7 +4,7 @@
 > 
 > ✨ **Your API Key + Your Decision Logic = Your Personalized Shopping Agent.**
 
-![Shopping Agent UI](assets/screenshot.png)
+<img src="assets/screenshot.png" width="800" alt="Shopping Agent UI Matrix">
 
 ---
 
