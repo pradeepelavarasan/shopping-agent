@@ -2,7 +2,7 @@
 
 > A smart, modern AI Chrome extension that automatically reads your shopping tabs and gives you a recommendation with comprehensive comparison.
 > 
-> ✨ **Your API Key + Your Thinking = Your Agent.**
+> ✨ **Your API Key + Your Decision Logic = Your Personalized Shopping Agent.**
 
 ---
 
