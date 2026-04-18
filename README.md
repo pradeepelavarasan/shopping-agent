@@ -61,26 +61,25 @@ The extension runs natively in your browser, so you need your own AI key. It's c
 ## 🔧 "The Hard Parts" — Challenges & Learnings
 Building an extension that bridges local browser DOM scraping and an external LLM gracefully had several tricky components.
 
-### Dynamic Shadow DOM Injector
-If we injected CSS directly into Amazon's pages, Amazon's complex stylesheets would instantly break our matrix layout. The solution was mounting the entire UI inside a **Shadow DOM** (`Element.attachShadow`). This created an isolated CSS environment where our sleek, glassmorphism dark-mode UI couldn't be polluted by Amazon's native styles.
+### 🛡️ Style Isolation (Shadow DOM)
+If we injected CSS directly into Amazon's pages, Amazon's complex stylesheets would instantly break our matrix layout. The solution was mounting the entire UI inside a **Shadow DOM** (`Element.attachShadow`). This created an isolated CSS environment where our sleek, glassmorphism dark-mode UI couldn't be polluted by the host site's native styles.
 
-### Structured JSON from LLMs
-Prompting an LLM to "compare products" usually results in a massive block of unformatted text. To build a deterministic grid matrix, we had to enforce a strict nested JSON schema. We used a zero-shot prompt instructing Gemini to return exactly a `{ "ProductId": { "Criteria": { "analysis": "...", "score": "positive" } } }` object. The extension parses this JSON programmatically to inject the `sent-positive` (Green) and `sent-negative` (Red) CSS classes natively into the DOM grid.
+### 🤖 Structured JSON Enforcement
+Prompting an LLM to "compare products" usually results in a massive block of unformatted text. To build a deterministic grid matrix, we enforced a strict nested JSON schema using a zero-shot prompt. The extension parses this JSON programmatically to inject the `sent-positive` (Green) and `sent-negative` (Red) CSS classes natively into the DOM grid.
 
-### Cross-Tab Scraping and Context Execution
-Browser security rightfully restricts one tab from reading another. To scrape all the products, the central `background.js` Service Worker had to query `chrome.tabs`, inject the `extractor.js` payload into *every* open Amazon tab asynchronously, wait for the DOM promises to resolve and return the scraped data, and then safely package it into a single payload for the AI API.
-
-### Drag and Drop Physics
-Native HTML5 drag-and-drop is famously rigid and stutters heavily on nested DOM elements. We implemented **SortableJS** to handle the custom priority sorting menu. Stripping our custom `pointer-events: none` hacks and letting Sortable natively manage the DOM collision physics resulted in a buttery-smooth, spring-loaded sorting UX.
+### 🌐 Cross-Tab Scraping
+Browser security restricts one tab from reading another. To scrape all the products, the central `background.js` Service Worker had to query `chrome.tabs`, inject the `extractor.js` payload into *every* open shopping tab asynchronously, and safely package the results into a single payload for the AI API.
 
 ---
+
+## 🛠️ "The How" — Technical Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────┐
 │                    User's Browser                   │
 │                                                     │
 │ ┌────────────┐  ┌────────────┐  ┌────────────┐      │
-│ │ Amazon Tab │  │ Amazon Tab │  │ Amazon Tab │      │
+│ │ Product Tab│  │ Product Tab│  │ Product Tab│      │
 │ └──────┬─────┘  └──────┬─────┘  └──────┬─────┘      │
 │        │               │               │            │
 │        ▼               ▼               ▼            │
@@ -94,14 +93,14 @@ Native HTML5 drag-and-drop is famously rigid and stutters heavily on nested DOM 
 │  1. Aggregates scraped data from all tabs           │
 │  2. Checks local cache for unchanged data           │
 │  3. Packages System Prompt & JSON enforcement       │
-│  4. HTTPS POST → Google Gemini API                  │
+│  4. HTTPS POST → Google Gemini AI                   │
 │  5. Parses JSON response & calculates DOM layout    │
 │  6. Injects shadow UI into the Active Tab           │
 └────────────────────────┼────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│             Active Amazon Tab (UI)                  │
+│             Active Shopping Tab (UI)                │
 │                                                     │
 │  ├─ Displays Shadow DOM Matrix                      │
 │  ├─ Maps AI sent-positive/negative CSS              │
@@ -113,7 +112,7 @@ Native HTML5 drag-and-drop is famously rigid and stutters heavily on nested DOM 
 | Layer | Technology | Why |
 |---|---|---|
 | Extension Core | Manifest V3 | Standard for modern secure Chrome extensions |
-| UI/Styles | Vanilla HTML/CSS inside Shadow DOM | Zero-dependency, complete style isolation from Amazon |
+| UI/Styles | Vanilla HTML/CSS inside Shadow DOM | Zero-dependency, complete style isolation from the host site |
 | Scraping | `chrome.scripting.executeScript` | Allows the background worker to silently extract DOMs |
 | AI Engine | Gemini 1.5 Flash Platform | Incredible speed and large context window (generous free tier) |
 | Interaction | SortableJS | Provides fluid, magnetic physics for reordering priorities |
