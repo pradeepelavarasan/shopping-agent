@@ -49,6 +49,14 @@ let currentPriorities = [
           });
       }
   }
+
+  function toggleScrollLock(lock) {
+      if (lock) {
+          document.body.style.overflow = 'hidden';
+      } else {
+          document.body.style.overflow = '';
+      }
+  }
   
   function injectOverlay() {
       let host = document.getElementById('shopping-agent-host');
@@ -192,6 +200,7 @@ let currentPriorities = [
   
           const closeExtension = () => {
               container.classList.remove('open');
+              toggleScrollLock(false);
               setTimeout(() => host.remove(), 400);
               if (window.saLoadingInterval) clearInterval(window.saLoadingInterval);
           };
@@ -204,6 +213,7 @@ let currentPriorities = [
               if (isAmazon) {
                   // Minimize on supported pages
                   container.classList.add('minimized');
+                  toggleScrollLock(false);
               } else {
                   // Completely close on unsupported pages
                   closeExtension();
@@ -214,6 +224,7 @@ let currentPriorities = [
           if (floater) {
               floater.addEventListener('click', () => {
                   container.classList.remove('minimized');
+                  toggleScrollLock(true);
                   const content = shadowRoot.getElementById('sa-content');
                   if (content && content.innerHTML.trim() === '') {
                       content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Restoring Matrix...</div></div>`;
@@ -223,13 +234,17 @@ let currentPriorities = [
           }
   
           requestAnimationFrame(() => {
-              setTimeout(() => container.classList.add('open'), 50);
+              setTimeout(() => {
+                  container.classList.add('open');
+                  toggleScrollLock(true);
+              }, 50);
           });
       } else {
           // If invoked while already existing but minimized, restore it
           const container = host.shadowRoot.getElementById('shopping-agent-container');
           if (container && container.classList.contains('minimized')) {
               container.classList.remove('minimized');
+              toggleScrollLock(true);
           }
       }
   }

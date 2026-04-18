@@ -256,6 +256,7 @@
     overflow-y: auto; 
     overflow-x: auto; 
     padding: 0;
+    overscroll-behavior: contain;
 }
 
 #sa-content::-webkit-scrollbar { width: 8px; height: 10px; }
