@@ -37,10 +37,16 @@ async function runComparison(tab, apiKey, priorities, forceRefresh = false) {
             currentWindow: true 
         });
         
-        const productTabs = tabs.filter(t => /\/dp\/|\/gp\/product\//i.test(t.url)).slice(0, 8);
+        const productTabs = tabs.filter(t => /\/dp\/|\/gp\/product\/|\/d\//i.test(t.url)).slice(0, 8);
 
         if (productTabs.length === 0) {
-            sendUpdate('<div class="error">No specific Amazon products found in open tabs.<br/><br/>Please open some product pages first (e.g., pages with /dp/ in the URL).</div>');
+            sendUpdate(`
+            <div class="agent-error-container">
+                <div class="error-icon">🛒</div>
+                <div class="error-title">No Products Found</div>
+                <div class="error-user-msg">Invoke the agent when you already have some Amazon tabs open.</div>
+                <p style="font-size: 13px; opacity: 0.7; margin-top: 10px;">The agent compares products you've already opened in your browser.</p>
+            </div>`);
             return;
         }
 
