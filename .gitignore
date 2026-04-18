@@ -16,3 +16,6 @@ yarn-error.log
 *.zip
 releases/
 PRODUCT_EXPERIENCE.md
+
+# Raw project assets
+videos/
