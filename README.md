@@ -1,4 +1,4 @@
----
+# Shopping Agent
 
 > A smart, modern AI Chrome extension that automatically reads your shopping tabs and gives you a recommendation with comprehensive comparison.
 > 
