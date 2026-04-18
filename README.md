@@ -4,6 +4,8 @@
 > 
 > ✨ **Your API Key + Your Decision Logic = Your Personalized Shopping Agent.**
 
+![Shopping Agent UI](assets/screenshot.png)
+
 ---
 
 ## 📖 "The What" — What is the product?
