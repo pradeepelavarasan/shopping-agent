@@ -4,7 +4,10 @@
 > 
 > ✨ **Your API Key + Your Decision Logic = Your Personalized Shopping Agent.**
 
+[![Watch the Demo Video](https://img.youtube.com/vi/w7zaF-Wk0hI/maxresdefault.jpg)](https://www.youtube.com/watch?v=w7zaF-Wk0hI)
+
 <img src=".github/assets/screenshot.png" width="800" alt="Shopping Agent UI Matrix">
+
 
 ---
 
