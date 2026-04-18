@@ -11,7 +11,7 @@
 ## 📖 "The What" — What is the product?
 Shopping Agent is a Chrome extension built for power shoppers. Instead of helplessly flipping back and forth between several product tabs trying to remember specific details or customer reviews, the Shopping Agent pulls everything into a single, beautiful dark-mode overlay. 
 
-**It externalizes your mental model.** By adding your own AI key and defining your own comparison logic, you are building an intelligent proxy that evaluates products exactly how *you* would. It acts as a literal manifestation of your brain's internal machine learning model—a companion that feeds raw data into Google's Gemini AI to output a color-coded sentiment matrix entirely mapped to your deeply personalized priorities.
+It acts as a literal manifestation of your brain's internal machine learning model. By reading photos, prices, ratings, and raw user reviews directly from your open tabs, it feeds them into Google's Gemini AI and outputs a color-coded sentiment matrix (Positive, Neutral, Negative) entirely mapped to your deeply personalized priorities.
 
 ---
 
