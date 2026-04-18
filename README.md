@@ -9,24 +9,22 @@
 ---
 
 ## 📖 "The What" — What is the product?
-Shopping Agent is a Chrome extension built for power shoppers. Instead of helplessly flipping back and forth between 5 different product tabs trying to remember which laptop had better battery life or which headphones had better customer reviews, the Shopping Agent pulls everything into a single, beautiful dark-mode overlay. 
+Shopping Agent is a Chrome extension built for power shoppers. Instead of helplessly flipping back and forth between several product tabs trying to remember specific details or customer reviews, the Shopping Agent pulls everything into a single, beautiful dark-mode overlay. 
 
-It acts as a literal manifestation of your brain's internal machine learning model—a companion that you build using your own API key and your own custom comparison logic. By reading photos, prices, ratings, and raw user reviews directly from your open tabs, it feeds them into Google's Gemini AI and outputs a color-coded sentiment matrix (Positive, Neutral, Negative) entirely mapped to your deeply personalized priorities.
+**It externalizes your mental model.** By adding your own AI key and defining your own comparison logic, you are building an intelligent proxy that evaluates products exactly how *you* would. It acts as a literal manifestation of your brain's internal machine learning model—a companion that feeds raw data into Google's Gemini AI to output a color-coded sentiment matrix entirely mapped to your deeply personalized priorities.
 
 ---
 
 ## 🤔 "The Why" — The Problem It Solves
-Comparing products online is cognitively exhausting. Every shopper inherently builds an internal "mental ML model" of features they care about (e.g., price-to-performance, aesthetics, durability). But actually applying that model computationally across scattered browser tabs forces you to hold massive amounts of transient data in your head. The typical workflow looks like this:
+Comparing products online is cognitively exhausting. Every shopper inherently builds an internal "mental ML model" of features they care about (e.g., price-to-performance, aesthetics, durability). But actually applying that model computationally across scattered browser tabs forces you to hold massive amounts of transient data in your head. The typical fragmented workflow looks like this:
 
-1. Open 5 different tabs for 5 different products.
-2. Read the reviews for Product A.
-3. Switch to Product B. Try to find the same information.
-4. Forget what Product A's warranty was. Switch back to Product A.
-5. Create an ugly Excel sheet or make mental notes that immediately vanish.
+1. Open multiple tabs for various product options.
+2. Read and analyze the reviews for Product A.
+3. Switch to Product B and try to locate the same metrics.
+4. Forget a specific detail from Product A and switch back.
+5. Manually track differences in a mental list or a separate document.
 
-These constraints make informed shopping tedious and frustrating. 
-
-**Shopping Agent externalizes your mental model.** By adding your own key and defining your own logic, you aren't just using a tool—you are building an intelligent proxy that evaluates products exactly how *you* would. You never lose your place, and you instantly see how products stack up side-by-side against the dimensions that specifically matter to you.
+These context-switches and data-memory gaps kill comprehension and make informed shopping tedious and frustrating. Shopping Agent was built to collapse these steps into a single, instant view.
 
 ---
 
