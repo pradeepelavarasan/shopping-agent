@@ -4,7 +4,7 @@
 > 
 > ✨ **Your API Key + Your Decision Logic = Your Personalized Shopping Agent.**
 
-<img src="assets/screenshot.png" width="800" alt="Shopping Agent UI Matrix">
+<img src=".github/assets/screenshot.png" width="800" alt="Shopping Agent UI Matrix">
 
 ---
 
@@ -131,4 +131,4 @@ Native HTML5 drag-and-drop is famously rigid and stutters heavily on nested DOM 
 
 ---
 
-*Built by [Pradeep Elavarasan](https://www.linkedin.com/in/pradeepelavarasan/) · Co-created with Google DeepMind Agent*
+*Built by [Pradeep Elavarasan](https://www.linkedin.com/in/pradeepelavarasan/) · Co-created with Google Agent*
