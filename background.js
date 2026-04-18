@@ -277,14 +277,6 @@ Products Data:
 }
 
 chrome.action.onClicked.addListener(async (tab) => {
-    // Check if we are on a supported Amazon domain
-    const isAmazon = /amazon\.(com|in|co\.uk|ca|de|fr|es|it|com\.au|co\.jp|ae|sa|com\.br|com\.mx)/i.test(tab.url);
-    if (!isAmazon) {
-        chrome.action.setBadgeText({ text: "N/A", tabId: tab.id });
-        setTimeout(() => chrome.action.setBadgeText({ text: "", tabId: tab.id }), 3000);
-        return;
-    }
-
     try {
         await chrome.scripting.executeScript({
             target: { tabId: tab.id },

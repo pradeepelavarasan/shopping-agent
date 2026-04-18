@@ -114,14 +114,18 @@ let currentPriorities = [
           const backdrop = document.createElement('div');
           backdrop.id = 'sa-backdrop';
 
-          // Floating minimizer button
-          const floater = document.createElement('div');
-          floater.id = 'sa-floater';
-          floater.innerHTML = `✨ Shopping Agent`;
+          // Floating minimizer button (Only for Amazon domains)
+          const isAmazon = /amazon\.(com|in|co\.uk|ca|de|fr|es|it|com\.au|co\.jp|ae|sa|com\.br|com\.mx)/i.test(window.location.hostname);
+          let floater = null;
+          if (isAmazon) {
+              floater = document.createElement('div');
+              floater.id = 'sa-floater';
+              floater.innerHTML = `✨ Shopping Agent`;
+              shadowRoot.appendChild(floater);
+          }
 
           shadowRoot.appendChild(container);
           shadowRoot.appendChild(backdrop);
-          shadowRoot.appendChild(floater);
   
           let editing = false;
           const tuneBtn = shadowRoot.getElementById('sa-tune-btn');
@@ -178,7 +182,7 @@ let currentPriorities = [
               if (cycler) {
                   let i = 0;
                   window.saLoadingInterval = setInterval(() => {
-                      cycler.innerHTML = `${saMode} ${currentPriorities[i % currentPriorities.length]}...`;
+                        if (cycler) cycler.innerHTML = `${saMode} ${currentPriorities[i % currentPriorities.length]}...`;
                       i++;
                   }, 1200);
               }
@@ -186,27 +190,37 @@ let currentPriorities = [
               chrome.runtime.sendMessage({ action: 'RUN_COMPARISON', priorities: currentPriorities, forceRefresh: true });
           });
   
-          // Hard Close
-          shadowRoot.getElementById('sa-close').addEventListener('click', () => {
+          const closeExtension = () => {
               container.classList.remove('open');
               setTimeout(() => host.remove(), 400);
               if (window.saLoadingInterval) clearInterval(window.saLoadingInterval);
-          });
+          };
 
-          // Soft Minimize (Clicking background)
+          // Hard Close
+          shadowRoot.getElementById('sa-close').addEventListener('click', closeExtension);
+
+          // Smart Dismissal
           backdrop.addEventListener('click', () => {
-              container.classList.add('minimized');
+              if (isAmazon) {
+                  // Minimize on supported pages
+                  container.classList.add('minimized');
+              } else {
+                  // Completely close on unsupported pages
+                  closeExtension();
+              }
           });
 
           // Un-minimize (Clicking floater)
-          floater.addEventListener('click', () => {
-              container.classList.remove('minimized');
-              const content = shadowRoot.getElementById('sa-content');
-              if (content && content.innerHTML.trim() === '') {
-                  content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Restoring Matrix...</div></div>`;
-                  chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
-              }
-          });
+          if (floater) {
+              floater.addEventListener('click', () => {
+                  container.classList.remove('minimized');
+                  const content = shadowRoot.getElementById('sa-content');
+                  if (content && content.innerHTML.trim() === '') {
+                      content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Restoring Matrix...</div></div>`;
+                      chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
+                  }
+              });
+          }
   
           requestAnimationFrame(() => {
               setTimeout(() => container.classList.add('open'), 50);
