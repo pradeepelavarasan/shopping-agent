@@ -11,7 +11,7 @@
 ## 📖 "The What" — What is the product?
 Shopping Agent is a Chrome extension built for power shoppers. Instead of helplessly flipping back and forth between 5 different product tabs trying to remember which laptop had better battery life or which headphones had better customer reviews, the Shopping Agent pulls everything into a single, beautiful dark-mode overlay. 
 
-It acts as a literal manifestation of your brain's internal machine learning model. By reading photos, prices, ratings, and raw user reviews directly from your open tabs, it feeds them into Google's Gemini AI and outputs a color-coded sentiment matrix (Positive, Neutral, Negative) entirely mapped to your deeply personalized priorities.
+It acts as a literal manifestation of your brain's internal machine learning model—a companion that you build using your own API key and your own custom comparison logic. By reading photos, prices, ratings, and raw user reviews directly from your open tabs, it feeds them into Google's Gemini AI and outputs a color-coded sentiment matrix (Positive, Neutral, Negative) entirely mapped to your deeply personalized priorities.
 
 ---
 
@@ -26,7 +26,7 @@ Comparing products online is cognitively exhausting. Every shopper inherently bu
 
 These constraints make informed shopping tedious and frustrating. 
 
-**Shopping Agent externalizes your mental model.** By extracting your cognitive load into an intelligent UI, shopping becomes instant. You open your tabs, hit the extension button, and the AI evaluates the pages exactly how *you* would. You never lose your place, and you instantly see how products stack up side-by-side against the dimensions that specifically matter to you.
+**Shopping Agent externalizes your mental model.** By adding your own key and defining your own logic, you aren't just using a tool—you are building an intelligent proxy that evaluates products exactly how *you* would. You never lose your place, and you instantly see how products stack up side-by-side against the dimensions that specifically matter to you.
 
 ---
 
