@@ -92,12 +92,20 @@ async function runComparison(tab, apiKey, priorities, forceRefresh = false) {
         <div class="loading-block">
             <div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
             <div id="loading-cycler">Analyzing Criteria...</div>
-            <div style="color:#94a3b8; font-size:13px; text-align: center; margin-top: 4px; opacity: 0.7;">Running deeper matrices via custom priorities</div>
         </div>`);
 
         const highPri = activePriorities.slice(0, 2).join(", ");
         const medPri = activePriorities[2] || "None specifically";
         const lowPri = activePriorities.slice(3).join(", ");
+
+        let _schemaEvalsStr = "";
+        activePriorities.forEach((crit, index) => {
+            const isLast = index === activePriorities.length - 1;
+            _schemaEvalsStr += `         "${crit}": {
+            "analysis": "<evaluate critically based on data>",
+            "score": "<Type EXACTLY: positive, neutral, or negative>"
+         }${isLast ? '' : ','}\n`;
+        });
 
         const prompt = `You are an expert AI Shopping Agent. I am providing you with multiple products extracted from a user's browser.
 You must construct a deeply analytical grid comparing these items.
@@ -119,12 +127,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
       "tabId": <number>,
       "is_top_recommendation": <boolean>,
       "evaluations": {
-         "${activePriorities[0] || 'Criterion 1'}": "<1-2 sentence sharp critique>",
-         "${activePriorities[1] || 'Criterion 2'}": "<1-2 sentence sharp critique>",
-         "${activePriorities[2] || 'Criterion 3'}": "<1-2 sentence sharp critique>",
-         "${activePriorities[3] || 'Criterion 4'}": "<1-2 sentence sharp critique>",
-         "${activePriorities[4] || 'Criterion 5'}": "<1-2 sentence sharp critique>"
-      }
+${_schemaEvalsStr}      }
     }
   ]
 }
@@ -179,11 +182,25 @@ Products Data:
             
             let evalRows = '';
             activePriorities.forEach(crit => {
-                 let textData = aiInsight.evaluations[crit] || "Not evaluated based on missing AI data.";
+                 const evalPayload = aiInsight.evaluations[crit];
+                 let analysisText = "No data available from Agent.";
+                 let scoreClass = "sent-neutral";
+                 
+                 if (evalPayload) {
+                     if (typeof evalPayload === 'string') {
+                         analysisText = evalPayload; // Fallback for old cache structure
+                     } else {
+                         analysisText = evalPayload.analysis || analysisText;
+                         const score = (evalPayload.score || '').toLowerCase();
+                         if (score.includes('pos')) scoreClass = 'sent-positive';
+                         else if (score.includes('neg')) scoreClass = 'sent-negative';
+                     }
+                 }
+
                  evalRows += `
-                 <div class="eval-row">
+                 <div class="eval-row ${scoreClass}">
                     <span class="eval-label">${crit}</span>
-                    <span class="eval-text">${textData}</span>
+                    <span class="eval-text">${analysisText}</span>
                  </div>`;
             });
 
@@ -193,14 +210,17 @@ Products Data:
             finalHtml += `
             <div class="${colClass}">
                 ${topBadge}
-                <div class="grid-header">
-                     <div class="matrix-img"><img src="${prod.image || 'https://via.placeholder.com/180?text=No+Image'}" /></div>
-                     <div class="matrix-title" title="${prod.title.replace(/"/g, '&quot;')}">${prod.title}</div>
-                     <div class="matrix-metrics">
-                           <span class="price">${prod.price || 'N/A'}</span>
-                           <span class="rating">${ratingStr}</span>
-                     </div>
-                     <button class="jump-to-tab" data-tab-id="${prod.tabId}">Go to Product</button>
+                <div class="product-click-zone jump-to-tab" data-tab-id="${prod.tabId}" title="Go to Product">
+                    <div class="matrix-img-wrapper">
+                         <div class="matrix-img"><img src="${prod.image || 'https://via.placeholder.com/180?text=No+Image'}" /></div>
+                    </div>
+                    <div class="grid-header">
+                         <div class="matrix-title" title="${prod.title.replace(/"/g, '&quot;')}">${prod.title}</div>
+                         <div class="matrix-metrics">
+                               <span class="price">${prod.price || 'N/A'}</span>
+                               <span class="rating">${ratingStr}</span>
+                         </div>
+                    </div>
                 </div>
                 <div class="grid-body">
                     ${evalRows}
@@ -228,6 +248,10 @@ Products Data:
             userMessage = "The AI Agent generated an invalid or interrupted data structure. Simply hit 'Save Setup' above to force the agent to try again.";
         } else if (rawError.includes("403") || rawError.includes("400") || rawError.includes("API key not valid")) {
             userMessage = "API Key Error. Please ensure your Gemini key is correct and has the necessary permissions active.";
+        } else if (rawError.includes("503")) {
+            userMessage = "Google's Gemini AI servers are currently overloaded (Error 503). Please wait a few seconds and try again!";
+        } else if (rawError.includes("500") || rawError.includes("502") || rawError.includes("504")) {
+            userMessage = "Google's AI servers are temporarily experiencing connection issues. Please try again soon.";
         }
 
         const errorHtml = `
@@ -235,8 +259,9 @@ Products Data:
             <div class="error-icon">⚠️</div>
             <div class="error-title">Agent Analysis Failed</div>
             <div class="error-user-msg">${userMessage}</div>
-            <div class="error-actions">
+            <div class="error-actions" style="display: flex; gap: 12px; justify-content: center;">
                 <button class="err-toggle-btn">Show Error Details</button>
+                <button class="err-retry-btn">Retry</button>
             </div>
             <div class="error-raw-trace hidden">${rawError}</div>
         </div>`;
@@ -249,7 +274,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     try {
         await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ['overlay.js']
+            files: ['sortable.min.js', 'overlay.js']
         });
     } catch (e) {
         chrome.action.setBadgeText({ text: "ERR", tabId: tab.id });
@@ -290,6 +315,15 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === 'JUMP_TO_TAB') {
+        try {
+            await chrome.scripting.executeScript({ target: { tabId: request.tabId }, files: ['sortable.min.js', 'overlay.js'] });
+            chrome.tabs.sendMessage(request.tabId, { action: 'MINIMIZE_ONLY' });
+            
+            const data = await chrome.storage.local.get(['cachedMatrixHtml']);
+            if (data.cachedMatrixHtml) {
+                chrome.tabs.sendMessage(request.tabId, { action: 'UPDATE_UI', html: data.cachedMatrixHtml });
+            }
+        } catch (e) { console.warn("Could not inject proxy floater", e); }
         chrome.tabs.update(request.tabId, { active: true });
     } else if (request.action === 'SAVE_API_KEY') {
         if (request.key && request.key.trim().length > 0) {
@@ -310,8 +344,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     } else if (request.action === 'RUN_COMPARISON') {
         const apiKey = await getApiKey();
         if (apiKey) {
-            // When editing priorities inside the overlay and clicking save, pass forceRefresh=true
             runComparison(sender.tab, apiKey, request.priorities, request.forceRefresh);
+        }
+    } else if (request.action === 'TRIGGER_FULL_RUN') {
+        const apiKey = await getApiKey();
+        if (apiKey) {
+            runComparison(sender.tab, apiKey, null, false);
         }
     }
 });

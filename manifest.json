@@ -4,7 +4,17 @@
   "version": "1.0",
   "description": "Smart, modern overlay that compares Amazon products using Gemini AI.",
   "action": {
-    "default_title": "Compare Amazon Tabs"
+    "default_title": "Compare Amazon Tabs",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
   },
   "permissions": [
     "tabs",

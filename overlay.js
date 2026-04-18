@@ -9,44 +9,45 @@ let currentPriorities = [
   ];
   let draftPriorities = [...currentPriorities];
   
-  function renderChips(container, editing) {
+  function renderDropdownItems(container) {
       container.innerHTML = '';
-      const prioritiesToRender = editing ? draftPriorities : currentPriorities;
-      
-      prioritiesToRender.forEach((pri, index) => {
-          const chip = document.createElement('div');
-          chip.className = 'chip';
+      draftPriorities.forEach((pri, index) => {
+          const item = document.createElement('div');
+          item.className = 'dropdown-pri-item';
           
-          let tierClass = "tier-low";
-          if (index < 2) tierClass = "tier-high";
-          else if (index === 2) tierClass = "tier-med";
-          chip.classList.add(tierClass);
+          const dragSpan = document.createElement('span');
+          dragSpan.className = 'drag-handle';
+          dragSpan.innerHTML = '☰';
           
-          const handleHtml = editing ? `<span class="drag-handle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>` : "";
-            
-          chip.innerHTML = `${handleHtml}<span>${pri}</span>`;
+          const textSpan = document.createElement('span');
+          textSpan.className = 'pri-text';
+          textSpan.innerText = pri;
+          textSpan.style.flex = "1";
           
-          if (editing) {
-              chip.draggable = true;
-              chip.dataset.index = index;
-              
-              chip.addEventListener('dragstart', (e) => {
-                  e.dataTransfer.setData('text/plain', index);
-                  setTimeout(() => chip.style.opacity = '0.4', 0);
-              });
-              chip.addEventListener('dragend', () => { chip.style.opacity = '1'; });
-              chip.addEventListener('dragover', (e) => e.preventDefault());
-              chip.addEventListener('drop', (e) => {
-                  e.preventDefault();
-                  const fromIndex = e.dataTransfer.getData('text/plain');
-                  const toIndex = index;
-                  const item = draftPriorities.splice(fromIndex, 1)[0];
-                  draftPriorities.splice(toIndex, 0, item);
-                  renderChips(container, true);
-              });
-          }
-          container.appendChild(chip);
+          const delBtn = document.createElement('span');
+          delBtn.className = 'del-pri-btn';
+          delBtn.innerHTML = '✖';
+          delBtn.title = "Remove";
+          
+          item.appendChild(dragSpan);
+          item.appendChild(textSpan);
+          item.appendChild(delBtn);
+          
+          delBtn.addEventListener('click', () => {
+              item.remove();
+          });
+          
+          container.appendChild(item);
       });
+      
+      if (window.Sortable) {
+          window.Sortable.create(container, {
+              animation: 200,
+              handle: '.drag-handle',
+              ghostClass: 'dragging',
+              easing: "cubic-bezier(1, 0, 0, 1)"
+          });
+      }
   }
   
   function injectOverlay() {
@@ -79,13 +80,23 @@ let currentPriorities = [
               <div class="header">
                   <div class="header-left">
                       <h2>✨ Shopping Agent</h2>
-                      <div class="chips-container" id="sa-chips"></div>
                   </div>
                   <div class="header-actions">
-                      <div class="edit-actions">
-                          <button class="icon-btn" id="sa-edit-btn" title="Edit Priority Order"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                          <button class="icon-btn danger hidden" id="sa-cancel-btn" title="Cancel Actions"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-                          <button class="icon-btn success hidden" id="sa-save-btn" title="Save & Re-analyze"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+                      <div class="dropdown-wrapper">
+                          <button class="tune-btn" id="sa-tune-btn">🧠 How I recommend</button>
+                          <div id="sa-tune-dropdown" class="sa-tune-dropdown hidden">
+                              <div class="dropdown-title">🧠 How I Recommend</div>
+                              <div class="dropdown-sub" style="line-height: 1.5;">Below are the order of decisions I use to evaluate the options. Please reorder based on your preferences or add custom criteria to have a highly personalized experience.</div>
+                              <div id="sa-priorities-vertical" class="vertical-drag-list"></div>
+                              <div class="add-pri-row">
+                                 <input type="text" id="new-pri-input" placeholder="e.g., Aesthetics, Made in India" autocomplete="off" />
+                                 <button id="add-pri-btn" title="Add Criteria">+</button>
+                              </div>
+                              <div class="dropdown-actions">
+                                  <button id="sa-cancel-edit" class="btn-cancel">Cancel</button>
+                                  <button id="sa-save-edit" class="btn-save">✔ Save</button>
+                              </div>
+                          </div>
                       </div>
                       <div class="divider"></div>
                       <button id="sa-close" title="Close Completely">&times;</button>
@@ -113,37 +124,51 @@ let currentPriorities = [
           shadowRoot.appendChild(floater);
   
           let editing = false;
-          const chipsContainer = shadowRoot.getElementById('sa-chips');
-          const editBtn = shadowRoot.getElementById('sa-edit-btn');
-          const cancelBtn = shadowRoot.getElementById('sa-cancel-btn');
-          const saveBtn = shadowRoot.getElementById('sa-save-btn');
+          const tuneBtn = shadowRoot.getElementById('sa-tune-btn');
+          const dropdown = shadowRoot.getElementById('sa-tune-dropdown');
+          const cancelBtn = shadowRoot.getElementById('sa-cancel-edit');
+          const saveBtn = shadowRoot.getElementById('sa-save-edit');
+          const addPriBtn = shadowRoot.getElementById('add-pri-btn');
+          const newPriInput = shadowRoot.getElementById('new-pri-input');
+          const verticalList = shadowRoot.getElementById('sa-priorities-vertical');
           
-          renderChips(chipsContainer, false);
-  
-          function setEditMode(state) {
-              editing = state;
-              if (editing) {
-                  draftPriorities = [...currentPriorities]; 
-                  editBtn.classList.add('hidden');
-                  cancelBtn.classList.remove('hidden');
-                  saveBtn.classList.remove('hidden');
-                  chipsContainer.classList.add('editing');
-                  renderChips(chipsContainer, true);
-              } else {
-                  editBtn.classList.remove('hidden');
-                  cancelBtn.classList.add('hidden');
-                  saveBtn.classList.add('hidden');
-                  chipsContainer.classList.remove('editing');
-                  renderChips(chipsContainer, false);
-              }
-          }
+          tuneBtn.addEventListener('click', () => {
+              draftPriorities = [...currentPriorities];
+              renderDropdownItems(verticalList);
+              dropdown.classList.toggle('hidden');
+          });
 
-          editBtn.addEventListener('click', () => setEditMode(true));
-          cancelBtn.addEventListener('click', () => setEditMode(false));
+          addPriBtn.addEventListener('click', () => {
+              const val = newPriInput.value.trim();
+              const currentNodes = verticalList.querySelectorAll('.pri-text');
+              
+              if (currentNodes.length >= 7) {
+                  newPriInput.value = '';
+                  newPriInput.placeholder = "Max 7 criteria limit reached";
+                  return;
+              }
+              
+              if (val) {
+                  draftPriorities = Array.from(currentNodes).map(n => n.innerText);
+                  draftPriorities.push(val);
+                  renderDropdownItems(verticalList);
+                  newPriInput.value = '';
+                  newPriInput.placeholder = "e.g., Aesthetics, Made in India";
+              }
+          });
+          newPriInput.addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') addPriBtn.click();
+          });
+
+          cancelBtn.addEventListener('click', () => {
+              dropdown.classList.add('hidden');
+          });
           
           saveBtn.addEventListener('click', () => {
-              currentPriorities = [...draftPriorities];
-              setEditMode(false);
+              const finalNodes = verticalList.querySelectorAll('.pri-text');
+              currentPriorities = Array.from(finalNodes).map(n => n.innerText);
+              dropdown.classList.add('hidden');
+              
               const content = shadowRoot.getElementById('sa-content');
               content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Initializing Re-analysis...</div></div>`;
               
@@ -176,6 +201,11 @@ let currentPriorities = [
           // Un-minimize (Clicking floater)
           floater.addEventListener('click', () => {
               container.classList.remove('minimized');
+              const content = shadowRoot.getElementById('sa-content');
+              if (content && content.innerHTML.trim() === '') {
+                  content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Restoring Matrix...</div></div>`;
+                  chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
+              }
           });
   
           requestAnimationFrame(() => {
@@ -193,7 +223,13 @@ let currentPriorities = [
   injectOverlay();
   
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === 'UPDATE_UI') {
+      if (request.action === 'MINIMIZE_ONLY') {
+          const shadowHost = document.getElementById('shopping-agent-host');
+          if (shadowHost && shadowHost.shadowRoot) {
+              const wrapper = shadowHost.shadowRoot.getElementById('shopping-agent-container');
+              if (wrapper) wrapper.classList.add('minimized');
+          }
+      } else if (request.action === 'UPDATE_UI') {
           const shadowHost = document.getElementById('shopping-agent-host');
           if (shadowHost && shadowHost.shadowRoot) {
               const content = shadowHost.shadowRoot.getElementById('sa-content');
@@ -214,8 +250,11 @@ let currentPriorities = [
               const buttons = shadowHost.shadowRoot.querySelectorAll('.jump-to-tab');
               buttons.forEach(btn => {
                   btn.addEventListener('click', (e) => {
-                      const tabId = parseInt(e.target.dataset.tabId, 10);
-                      chrome.runtime.sendMessage({ action: 'JUMP_TO_TAB', tabId });
+                      const tabWrapper = e.target.closest('.jump-to-tab');
+                      if (tabWrapper) {
+                          const tabId = parseInt(tabWrapper.dataset.tabId, 10);
+                          chrome.runtime.sendMessage({ action: 'JUMP_TO_TAB', tabId });
+                      }
                   });
               });
   
@@ -238,6 +277,16 @@ let currentPriorities = [
                           trace.classList.add('hidden');
                           btn.innerText = 'Show Error Details';
                       }
+                  });
+              });
+
+              // Error screen Retry Button
+              const retryBtns = shadowHost.shadowRoot.querySelectorAll('.err-retry-btn');
+              retryBtns.forEach(btn => {
+                  btn.addEventListener('click', () => {
+                      const content = shadowHost.shadowRoot.getElementById('sa-content');
+                      content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Retrying Matrix...</div></div>`;
+                      chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
                   });
               });
           }
