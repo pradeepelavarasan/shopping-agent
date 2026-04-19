@@ -1,0 +1,16 @@
+{
+  "name": "shopping-agent-extension",
+  "version": "1.0.0",
+  "description": "Automated testing for Shopping Agent browser extension",
+  "private": true,
+  "scripts": {
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0",
+    "jsdom": "^24.0.0",
+    "vitest": "^1.4.0"
+  }
+}

@@ -141,14 +141,20 @@ ${_schemaEvalsStr}      }
 Products Data:
 ` + JSON.stringify(productDataList.map(p => ({ tabId: p.tabId, title: p.title, description: p.description, price: p.price, rating: p.rating, reviewsCount: p.reviews, reviewsSourceLevel: p.reviewsSource, reviewsTextData: p.topReviews })));
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { response_mime_type: "application/json" }
-            })
+            }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`API returned ${response.status}`);
@@ -246,7 +252,9 @@ Products Data:
         let userMessage = "Something went wrong while processing the matrix data.";
         let rawError = err.message || err.toString();
 
-        if (rawError.toLowerCase().includes("failed to fetch")) {
+        if (rawError.includes("AbortError")) {
+            userMessage = "Analysis Timed Out. The AI Agent server took too long to respond. The connection was closed to prevent hanging. Please retry.";
+        } else if (rawError.toLowerCase().includes("failed to fetch")) {
             userMessage = "Network Connection Error. Please verify your internet connection or check if the Gemini API is reachable from your network.";
         } else if (rawError.includes("429") || rawError.includes("quota")) {
             userMessage = "API Rate Limit Exceeded. The Agent has made too many requests. Please wait a moment and try again.";

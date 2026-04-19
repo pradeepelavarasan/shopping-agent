@@ -1,14 +1,24 @@
 # macOS specific
 .DS_Store
 
-# Node/NPM (future-proofing in case you ever use build tools like Vite/Webpack)
+# Node/NPM
 node_modules/
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+package-lock.json
 
-# Environment Variables (future-proofing in case you ever decide to use a proxy server)
+# Testing Artifacts
+playwright-report/
+test-results/
+.vitest/
+coverage/
+
+# Environment Variables
 .env
-.env.*
+.env.local
+.env.*.local
 
 # Extension build outputs (for when you package it for the Chrome Web Store!)
 *.pem

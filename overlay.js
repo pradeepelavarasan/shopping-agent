@@ -1,17 +1,22 @@
-// overlay.js
+// Prevent redeclaration errors on re-injection
+if (window.shoppingAgentLoaded) {
+    if (typeof window.saInjectOverlay === 'function') window.saInjectOverlay();
+} else {
+    window.shoppingAgentLoaded = true;
 
-let currentPriorities = [
-    "Customer Sentiment",
-    "Reliability",
-    "Value for Money",
-    "Feature Completeness",
-    "Build Quality"
-  ];
-  let draftPriorities = [...currentPriorities];
+    window.currentPriorities = [
+      "Customer Sentiment",
+      "Reliability",
+      "Value for Money",
+      "Feature Completeness",
+      "Build Quality"
+    ];
+    window.draftPriorities = [...window.currentPriorities];
+
   
   function renderDropdownItems(container) {
       container.innerHTML = '';
-      draftPriorities.forEach((pri, index) => {
+      window.draftPriorities.forEach((pri, index) => {
           const item = document.createElement('div');
           item.className = 'dropdown-pri-item';
           
@@ -58,7 +63,7 @@ let currentPriorities = [
       }
   }
   
-  function injectOverlay() {
+  window.saInjectOverlay = function injectOverlay() {
       let host = document.getElementById('shopping-agent-host');
       
       let saMode = 'Analyzing'; // State variable for cycler (Analyzing vs Re-analyzing)
@@ -123,17 +128,18 @@ let currentPriorities = [
           backdrop.id = 'sa-backdrop';
 
           // Floating minimizer button (Only for Amazon domains)
-          const isAmazon = /amazon\.(com|in|co\.uk|ca|de|fr|es|it|com\.au|co\.jp|ae|sa|com\.br|com\.mx)/i.test(window.location.hostname);
+          const isAmazon = /amazon\.(com|in|co\.uk|ca|de|fr|es|it|com\.au|co\.jp|ae|sa|com\.br|com\.mx|sg|nl|tr|be|pl|se)/i.test(window.location.hostname);
           let floater = null;
           if (isAmazon) {
               floater = document.createElement('div');
               floater.id = 'sa-floater';
               floater.innerHTML = `✨ Shopping Agent`;
-              shadowRoot.appendChild(floater);
           }
 
           shadowRoot.appendChild(container);
           shadowRoot.appendChild(backdrop);
+          if (floater) shadowRoot.appendChild(floater);
+
   
           let editing = false;
           const tuneBtn = shadowRoot.getElementById('sa-tune-btn');
@@ -145,7 +151,7 @@ let currentPriorities = [
           const verticalList = shadowRoot.getElementById('sa-priorities-vertical');
           
           tuneBtn.addEventListener('click', () => {
-              draftPriorities = [...currentPriorities];
+              window.draftPriorities = [...window.currentPriorities];
               renderDropdownItems(verticalList);
               dropdown.classList.toggle('hidden');
           });
@@ -161,8 +167,8 @@ let currentPriorities = [
               }
               
               if (val) {
-                  draftPriorities = Array.from(currentNodes).map(n => n.innerText);
-                  draftPriorities.push(val);
+                  window.draftPriorities = Array.from(currentNodes).map(n => n.innerText);
+                  window.draftPriorities.push(val);
                   renderDropdownItems(verticalList);
                   newPriInput.value = '';
                   newPriInput.placeholder = "e.g., Aesthetics, Made in India";
@@ -178,7 +184,7 @@ let currentPriorities = [
           
           saveBtn.addEventListener('click', () => {
               const finalNodes = verticalList.querySelectorAll('.pri-text');
-              currentPriorities = Array.from(finalNodes).map(n => n.innerText);
+              window.currentPriorities = Array.from(finalNodes).map(n => n.innerText);
               dropdown.classList.add('hidden');
               
               const content = shadowRoot.getElementById('sa-content');
@@ -190,12 +196,14 @@ let currentPriorities = [
               if (cycler) {
                   let i = 0;
                   window.saLoadingInterval = setInterval(() => {
-                        if (cycler) cycler.innerHTML = `${saMode} ${currentPriorities[i % currentPriorities.length]}...`;
+                        const pris = window.currentPriorities || [];
+                        const text = pris.length > 0 ? pris[i % pris.length] : "Evaluating";
+                        if (cycler) cycler.innerHTML = `${saMode} ${text}...`;
                       i++;
                   }, 1200);
               }
 
-              chrome.runtime.sendMessage({ action: 'RUN_COMPARISON', priorities: currentPriorities, forceRefresh: true });
+              chrome.runtime.sendMessage({ action: 'RUN_COMPARISON', priorities: window.currentPriorities, forceRefresh: true });
           });
   
           const closeExtension = () => {
@@ -249,8 +257,6 @@ let currentPriorities = [
       }
   }
   
-  injectOverlay();
-  
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'MINIMIZE_ONLY') {
           const shadowHost = document.getElementById('shopping-agent-host');
@@ -271,7 +277,9 @@ let currentPriorities = [
                   // If we don't have a specific mode set yet, default to 'Analyzing'
                   const modeText = typeof saMode !== 'undefined' ? saMode : 'Analyzing';
                   window.saLoadingInterval = setInterval(() => {
-                      cycler.innerHTML = `${modeText} ${currentPriorities[i % currentPriorities.length]}...`;
+                      const pris = window.currentPriorities || [];
+                      const text = pris.length > 0 ? pris[i % pris.length] : "Evaluating";
+                      cycler.innerHTML = `${modeText} ${text}...`;
                       i++;
                   }, 1200);
               }
@@ -291,7 +299,7 @@ let currentPriorities = [
               if (saveApiKeyBtn) {
                   saveApiKeyBtn.addEventListener('click', () => {
                       const key = shadowHost.shadowRoot.getElementById('sa-apikey-input').value;
-                      chrome.runtime.sendMessage({ action: 'SAVE_API_KEY', key: key, priorities: currentPriorities });
+                      chrome.runtime.sendMessage({ action: 'SAVE_API_KEY', key: key, priorities: window.currentPriorities });
                   });
               }
 
@@ -321,3 +329,7 @@ let currentPriorities = [
           }
       }
   });
+  window.saInjectOverlay();
+}
+
+

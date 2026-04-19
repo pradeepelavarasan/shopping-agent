@@ -51,14 +51,12 @@ Since this extension isn't on the Chrome Web Store yet, installing it is a quick
 - Click the Shopping Agent icon.
 - On your first run, you will be prompted to enter a Gemini API Key (see below). Once entered, the AI will immediately scan your tabs and build your matrix! 
 
-### 🔑 How to generate a Gemini Key
+### 🔑 How to generate a Gemini Key (Free Tier)
 The extension runs natively in your browser, so you need your own AI key. It's completely free and takes less than 60 seconds:
 
 1. Go to [Google AI Studio](https://aistudio.google.com/).
 2. Sign in with your Google account.
-3. Click **"Get API Key"** in the left menu.
 4. Click **"Create API key"** (found in the right-hand side top corner). 
-   - *Tip:* The header also mentions how to generate a **Gemini (Free Tier)** key.
 5. Copy the key and paste it into the Shopping Agent extension. That's it!
 
 > [!NOTE] 
@@ -140,3 +138,5 @@ A true personalized agent would ideally auto-populate your preferences by analyz
 ---
 
 *Built by [Pradeep Elavarasan](https://www.linkedin.com/in/pradeepelavarasan/) · Co-created with Google Agent*
+
+
