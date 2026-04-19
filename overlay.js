@@ -241,6 +241,51 @@ if (window.shoppingAgentLoaded) {
               });
           }
   
+          // Event Delegation for Content Area
+          const content = shadowRoot.getElementById('sa-content');
+          content.addEventListener('click', (e) => {
+              // 1. Jump to Tab
+              const jumpBtn = e.target.closest('.jump-to-tab');
+              if (jumpBtn) {
+                  const tabId = parseInt(jumpBtn.dataset.tabId, 10);
+                  toggleScrollLock(false); // Unlock scroll before switching
+                  chrome.runtime.sendMessage({ action: 'JUMP_TO_TAB', tabId });
+                  return;
+              }
+
+              // 2. Error Toggle Details
+              const errToggle = e.target.closest('.err-toggle-btn');
+              if (errToggle) {
+                  const trace = errToggle.parentElement.nextElementSibling;
+                  if (trace && trace.classList.contains('hidden')) {
+                      trace.classList.remove('hidden');
+                      errToggle.innerText = 'Hide Error Details';
+                  } else if (trace) {
+                      trace.classList.add('hidden');
+                      errToggle.innerText = 'Show Error Details';
+                  }
+                  return;
+              }
+
+              // 3. Error Retry
+              const retryBtn = e.target.closest('.err-retry-btn');
+              if (retryBtn) {
+                  content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Retrying Matrix...</div></div>`;
+                  chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
+                  return;
+              }
+
+              // 4. API Key Save
+              const saveKeyBtn = e.target.closest('#sa-save-apikey');
+              if (saveKeyBtn) {
+                  const input = shadowRoot.getElementById('sa-apikey-input');
+                  if (input) {
+                      chrome.runtime.sendMessage({ action: 'SAVE_API_KEY', key: input.value, priorities: window.currentPriorities });
+                  }
+                  return;
+              }
+          });
+
           requestAnimationFrame(() => {
               setTimeout(() => {
                   container.classList.add('open');
@@ -286,49 +331,6 @@ if (window.shoppingAgentLoaded) {
                       i++;
                   }, 1200);
               }
-              
-              const buttons = shadowHost.shadowRoot.querySelectorAll('.jump-to-tab');
-              buttons.forEach(btn => {
-                  btn.addEventListener('click', (e) => {
-                      const tabWrapper = e.target.closest('.jump-to-tab');
-                      if (tabWrapper) {
-                          const tabId = parseInt(tabWrapper.dataset.tabId, 10);
-                          chrome.runtime.sendMessage({ action: 'JUMP_TO_TAB', tabId });
-                      }
-                  });
-              });
-  
-              const saveApiKeyBtn = shadowHost.shadowRoot.getElementById('sa-save-apikey');
-              if (saveApiKeyBtn) {
-                  saveApiKeyBtn.addEventListener('click', () => {
-                      const key = shadowHost.shadowRoot.getElementById('sa-apikey-input').value;
-                      chrome.runtime.sendMessage({ action: 'SAVE_API_KEY', key: key, priorities: window.currentPriorities });
-                  });
-              }
-
-              const errBtns = shadowHost.shadowRoot.querySelectorAll('.err-toggle-btn');
-              errBtns.forEach(btn => {
-                  btn.addEventListener('click', () => {
-                      const trace = btn.parentElement.nextElementSibling;
-                      if (trace && trace.classList.contains('hidden')) {
-                          trace.classList.remove('hidden');
-                          btn.innerText = 'Hide Error Details';
-                      } else if (trace) {
-                          trace.classList.add('hidden');
-                          btn.innerText = 'Show Error Details';
-                      }
-                  });
-              });
-
-              // Error screen Retry Button
-              const retryBtns = shadowHost.shadowRoot.querySelectorAll('.err-retry-btn');
-              retryBtns.forEach(btn => {
-                  btn.addEventListener('click', () => {
-                      const content = shadowHost.shadowRoot.getElementById('sa-content');
-                      content.innerHTML = `<div class="loading-block"><div class="ai-analyzer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div><div id="loading-cycler">Retrying Matrix...</div></div>`;
-                      chrome.runtime.sendMessage({ action: 'TRIGGER_FULL_RUN' });
-                  });
-              });
           }
       }
   });
