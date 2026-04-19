@@ -53,11 +53,17 @@ Since this extension isn't on the Chrome Web Store yet, installing it is a quick
 
 ### 🔑 How to generate a Gemini Key
 The extension runs natively in your browser, so you need your own AI key. It's completely free and takes less than 60 seconds:
+
 1. Go to [Google AI Studio](https://aistudio.google.com/).
 2. Sign in with your Google account.
 3. Click **"Get API Key"** in the left menu.
-4. Click **"Create API key in new project"**.
+4. Click **"Create API key"** (found in the right-hand side top corner). 
+   - *Tip:* The header also mentions how to generate a **Gemini (Free Tier)** key.
 5. Copy the key and paste it into the Shopping Agent extension. That's it!
+
+> [!NOTE] 
+> **You will not be charged extra.** The Gemini Free Tier has no cost. Just ensure it is showing up as **Free Tier billing** to stay within the rate limits (which include a set number of calls per minute and per day).
+
 
 ---
 
