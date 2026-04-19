@@ -262,7 +262,10 @@ if (window.shoppingAgentLoaded) {
           const shadowHost = document.getElementById('shopping-agent-host');
           if (shadowHost && shadowHost.shadowRoot) {
               const wrapper = shadowHost.shadowRoot.getElementById('shopping-agent-container');
-              if (wrapper) wrapper.classList.add('minimized');
+              if (wrapper) {
+                  wrapper.classList.add('minimized');
+                  toggleScrollLock(false);
+              }
           }
       } else if (request.action === 'UPDATE_UI') {
           const shadowHost = document.getElementById('shopping-agent-host');
